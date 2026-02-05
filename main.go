@@ -79,7 +79,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     <title>Stromboli</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #1a1a1a;
             color: #e0e0e0;
@@ -210,7 +210,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
                     renderFileList(files);
                 })
                 .catch(err => {
-                    document.getElementById('fileList').innerHTML = 
+                    document.getElementById('fileList').innerHTML =
                         '<div class="loading">Error loading directory</div>';
                 });
         }
@@ -218,22 +218,22 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
         function updateBreadcrumb(path) {
             const parts = path ? path.split('/').filter(p => p) : [];
             const breadcrumb = document.getElementById('breadcrumb');
-            
-            let html = '<span onclick="browse(\'\')">&#x1F3E0; Home</span>';
+
+            let html = '<span onclick="browse(\'\')">Home</span>';
             let accumulated = '';
-            
+
             parts.forEach(part => {
                 accumulated += (accumulated ? '/' : '') + part;
                 const thisPath = accumulated;
                 html += ' / <span onclick="browse(\'' + thisPath + '\')">' + part + '</span>';
             });
-            
+
             breadcrumb.innerHTML = html;
         }
 
         function renderFileList(files) {
             const list = document.getElementById('fileList');
-            
+
             if (files.length === 0) {
                 list.innerHTML = '<div class="loading">Empty directory</div>';
                 return;
@@ -249,13 +249,13 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
                 const icon = file.isDir ? '&#x1F4C1;' : (file.isVideo ? '&#x1F3AC;' : '&#x1F4C4;');
                 let onclick = '';
                 let clickHandler = '';
-                
+
                 if (file.isDir) {
                     onclick = 'onclick="browse(\'' + file.path + '\')"';
                 } else if (file.isVideo) {
                     onclick = 'onclick="playVideo(\'' + file.path + '\', ' + file.canPlay + ')"';
                 }
-                
+
                 return '<div class="file-item" ' + onclick + ' data-path="' + file.path + '">' +
                     '<span class="icon">' + icon + '</span>' +
                     '<span>' + file.name + '</span>' +
@@ -265,25 +265,25 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
         function playVideo(path, canPlayNatively) {
             const player = document.getElementById('player');
-            
+
             // Highlight selected file
             document.querySelectorAll('.file-item').forEach(el => {
                 el.classList.toggle('active', el.dataset.path === path);
             });
 
-            const videoUrl = canPlayNatively 
+            const videoUrl = canPlayNatively
                 ? '/api/video/' + encodeURIComponent(path)
                 : '/api/stream/' + encodeURIComponent(path);
 
-            const transcodeNotice = canPlayNatively ? '' : 
-                '<div class="transcoding-notice">&#x26A1; Transcoding on-the-fly</div>';
+            const transcodeNotice = canPlayNatively ? '' :
+                '<div class="transcoding-notice">Transcoding...</div>';
 
             player.innerHTML = transcodeNotice +
                 '<video controls autoplay>' +
                     '<source src="' + videoUrl + '" type="video/mp4">' +
                     'Your browser does not support the video tag.' +
                 '</video>';
-            
+
             currentVideo = path;
         }
 
