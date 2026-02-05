@@ -400,6 +400,14 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		"pipe:1",
 	)
 
+	// Capture stderr for debugging
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Printf("Error creating stderr pipe: %v", err)
+		http.Error(w, "Transcoding error", http.StatusInternalServerError)
+		return
+	}
+
 	// Get stdout pipe
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -415,14 +423,48 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Copy output to response
-	_, err = io.Copy(w, stdout)
-	if err != nil {
-		log.Printf("Error streaming video: %v", err)
+	// Log stderr in background
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := stderr.Read(buf)
+			if n > 0 {
+				log.Printf("FFmpeg: %s", string(buf[:n]))
+			}
+			if err != nil {
+				break
+			}
+		}
+	}()
+
+	// Monitor for client disconnect and kill ffmpeg if needed
+	done := make(chan bool)
+	go func() {
+		// Copy output to response
+		_, err = io.Copy(w, stdout)
+		if err != nil {
+			log.Printf("Error streaming video: %v", err)
+		}
+		done <- true
+	}()
+
+	// Wait for either completion or context cancellation
+	select {
+	case <-done:
+		// Streaming finished normally
+	case <-r.Context().Done():
+		// Client disconnected
+		log.Printf("Client disconnected, killing ffmpeg process for: %s", path)
+		if err := cmd.Process.Kill(); err != nil {
+			log.Printf("Error killing ffmpeg: %v", err)
+		}
 	}
 
 	// Wait for command to finish
 	if err := cmd.Wait(); err != nil {
-		log.Printf("FFmpeg error: %v", err)
+		// Don't log error if we killed the process intentionally
+		if r.Context().Err() == nil {
+			log.Printf("FFmpeg error: %v", err)
+		}
 	}
 }
