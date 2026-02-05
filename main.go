@@ -380,14 +380,23 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	// FFmpeg command to transcode to H.264/AAC MP4
 	cmd := exec.Command("ffmpeg",
+		"-re", // Read input at native frame rate
 		"-i", fullPath,
+		"-map", "0:v:0", // First video stream only
+		"-map", "0:a:0", // First audio stream only
 		"-c:v", "libx264",
-		"-preset", "veryfast",
+		"-preset", "ultrafast",
+		"-tune", "zerolatency",
 		"-crf", "23",
+		"-maxrate", "3M",
+		"-bufsize", "6M",
+		"-pix_fmt", "yuv420p",
 		"-c:a", "aac",
 		"-b:a", "128k",
-		"-movflags", "frag_keyframe+empty_moov",
+		"-ac", "2", // Stereo audio
+		"-movflags", "frag_keyframe+empty_moov+faststart",
 		"-f", "mp4",
+		"-loglevel", "warning",
 		"pipe:1",
 	)
 
