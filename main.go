@@ -76,7 +76,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	tmpl := `<!DOCTYPE html>
 <html>
 <head>
-    <title>Video Browser</title>
+    <title>Stromboli</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -180,7 +180,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 </head>
 <body>
     <header>
-        <h1>&#x1F4F9; Video Browser</h1>
+        <h1>Stromboli</h1>
     </header>
     <div class="container">
         <div class="browser">
