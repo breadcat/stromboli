@@ -19,3 +19,7 @@ Then access the servers IP address via a web browser on port `8080`.
 * You can't select anything past the first audio channel
 * Seeking isn't supported on transcoded files
 * The UI on mobile isn't great
+
+## Screenshot
+
+![](screenshot.jpg)
