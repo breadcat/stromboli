@@ -85,6 +85,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     <title>Stromboli</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #1a1a1a;
@@ -101,7 +102,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
         h1 { font-size: 1.5rem; color: #fff; }
         .container {
             display: flex;
-            flex: 1;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow: hidden;
         }
         .browser {
@@ -111,6 +113,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-height: 0;
         }
         .breadcrumb {
             padding: 1rem;
@@ -172,9 +175,12 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
         }
         .filter-input::placeholder { color: #666; }
         .file-list {
-            flex: 1;
+            flex: 1 1 auto;
             overflow-y: auto;
             padding: 0.5rem;
+            min-height: 0;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
         }
         .file-item {
             padding: 0.75rem 1rem;
@@ -193,11 +199,13 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             text-align: center;
         }
         .player {
-            flex: 1;
+            flex: 1 1 auto;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 2rem;
+            min-height: 0;
+            overflow: hidden;
         }
         video {
             max-width: 100%;
@@ -233,7 +241,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 			.browser {
 				width: 100%;
-				max-height: 40vh;
+				max-height: 40svh;
 				border-right: none;
 				border-bottom: 1px solid #3d3d3d;
 			}
