@@ -117,8 +117,17 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             background: #2d2d2d;
             border-bottom: 1px solid #3d3d3d;
             font-size: 0.9rem;
-            overflow-x: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .breadcrumb-path {
+            flex: 1;
+            overflow: hidden;
             white-space: nowrap;
+            text-overflow: ellipsis;
+            min-width: 0;
         }
         .breadcrumb span {
             color: #4a9eff;
@@ -127,6 +136,40 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             border-radius: 3px;
         }
         .breadcrumb span:hover { background: #3d3d3d; }
+        .filter-toggle {
+            background: #3d3d3d;
+            border: none;
+            color: #e0e0e0;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
+        }
+        .filter-toggle:hover { background: #4d4d4d; }
+        .filter-toggle.active { background: #4a9eff; color: #000; }
+        .filter-bar {
+            padding: 0.75rem 1rem;
+            background: #2d2d2d;
+            border-bottom: 1px solid #3d3d3d;
+            display: none;
+        }
+        .filter-bar.visible { display: block; }
+        .filter-input {
+            width: 100%;
+            padding: 0.5rem;
+            background: #1a1a1a;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+        .filter-input::placeholder { color: #666; }
         .file-list {
             flex: 1;
             overflow-y: auto;
@@ -230,7 +273,13 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     </header>
     <div class="container">
         <div class="browser">
-            <div class="breadcrumb" id="breadcrumb"></div>
+            <div class="breadcrumb" id="breadcrumb">
+                <div class="breadcrumb-path" id="breadcrumbPath"></div>
+                <button class="filter-toggle" id="filterToggle" onclick="toggleFilter()">&#x1F50D;</button>
+            </div>
+            <div class="filter-bar" id="filterBar">
+                <input type="text" class="filter-input" id="filterInput" placeholder="Filter files and folders..." oninput="applyFilter()">
+            </div>
             <div class="file-list" id="fileList">
                 <div class="loading">Loading...</div>
             </div>
@@ -246,13 +295,52 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     <script>
         let currentPath = '';
         let currentVideo = null;
+        let allFiles = [];
+        let filterVisible = false;
+
+        function toggleFilter() {
+            filterVisible = !filterVisible;
+            const filterBar = document.getElementById('filterBar');
+            const filterToggle = document.getElementById('filterToggle');
+            const filterInput = document.getElementById('filterInput');
+
+            if (filterVisible) {
+                filterBar.classList.add('visible');
+                filterToggle.classList.add('active');
+                filterInput.focus();
+            } else {
+                filterBar.classList.remove('visible');
+                filterToggle.classList.remove('active');
+                filterInput.value = '';
+                renderFileList(allFiles);
+            }
+        }
+
+        function applyFilter() {
+            const filterText = document.getElementById('filterInput').value.toLowerCase();
+
+            if (!filterText) {
+                renderFileList(allFiles);
+                return;
+            }
+
+            const filtered = allFiles.filter(file =>
+                file.name.toLowerCase().includes(filterText)
+            );
+
+            renderFileList(filtered);
+        }
 
         function browse(path = '') {
             currentPath = path;
             fetch('/api/browse?path=' + encodeURIComponent(path))
                 .then(r => r.json())
                 .then(files => {
+                    allFiles = files;
                     updateBreadcrumb(path);
+
+                    // Clear filter when changing directories
+                    document.getElementById('filterInput').value = '';
                     renderFileList(files);
                 })
                 .catch(err => {
@@ -263,7 +351,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
         function updateBreadcrumb(path) {
             const parts = path ? path.split('/').filter(p => p) : [];
-            const breadcrumb = document.getElementById('breadcrumb');
+            const breadcrumbPath = document.getElementById('breadcrumbPath');
 
             let html = '<span onclick="browse(\'\')">Home</span>';
             let accumulated = '';
@@ -274,14 +362,14 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
                 html += ' / <span onclick="browse(\'' + thisPath + '\')">' + part + '</span>';
             });
 
-            breadcrumb.innerHTML = html;
+            breadcrumbPath.innerHTML = html;
         }
 
         function renderFileList(files) {
             const list = document.getElementById('fileList');
 
             if (files.length === 0) {
-                list.innerHTML = '<div class="loading">Empty directory</div>';
+                list.innerHTML = '<div class="loading">No matches found</div>';
                 return;
             }
 
