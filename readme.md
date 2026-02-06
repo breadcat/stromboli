@@ -19,3 +19,4 @@ Then access the servers IP address via a web browser on port `8080`.
 * Seeking isn't supported on transcoded files
 * Some ffmpeg processes aren't always killed after client disconnect
 * The UI on mobile isn't great
+* AC3 audio doesn't seem to be encoded properly

@@ -83,7 +83,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #1a1a1a;
             color: #e0e0e0;
-            height: 100vh;
+            min-height: 100svh;
             display: flex;
             flex-direction: column;
         }
@@ -99,7 +99,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             overflow: hidden;
         }
         .browser {
-            width: 350px;
+            width: clamp(240px, 30vw, 350px);
             background: #242424;
             border-right: 1px solid #3d3d3d;
             display: flex;
@@ -176,7 +176,47 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             font-size: 0.9rem;
             font-weight: 500;
         }
+		@media (max-width: 768px) {
+			.container {
+				flex-direction: column;
+			}
+
+			.browser {
+				width: 100%;
+				max-height: 40vh;
+				border-right: none;
+				border-bottom: 1px solid #3d3d3d;
+			}
+
+			.player {
+				padding: 1rem;
+			}
+
+			header {
+				padding: 0.75rem 1rem;
+			}
+
+			h1 {
+				font-size: 1.25rem;
+			}
+			.file-item {
+				padding: 1rem;
+				font-size: 1rem;
+			}
+
+			.breadcrumb span {
+				padding: 0.4rem 0.6rem;
+			}
+			.transcoding-notice {
+				top: auto;
+				bottom: 1rem;
+				right: 50%;
+				transform: translateX(50%);
+				font-size: 0.8rem;
+			}
+		}
     </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
     <header>
