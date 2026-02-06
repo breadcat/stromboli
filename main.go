@@ -11,9 +11,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 var rootDir string
+var (
+	transcodeMutex sync.Mutex
+	activeCmd      *exec.Cmd
+)
 
 type FileInfo struct {
 	Name     string `json:"name"`
@@ -414,6 +419,16 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Kill any existing transcoding process before starting a new one
+	transcodeMutex.Lock()
+	if activeCmd != nil && activeCmd.Process != nil {
+		log.Printf("Killing existing ffmpeg process to start new transcode")
+		activeCmd.Process.Kill()
+		activeCmd.Wait() // Wait for it to fully exit
+		activeCmd = nil
+	}
+	transcodeMutex.Unlock()
+
 	// Set headers for streaming
 	w.Header().Set("Content-Type", "video/mp4")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -439,6 +454,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		"-loglevel", "warning",
 		"pipe:1",
 	)
+
+	// Track this as the active command
+	transcodeMutex.Lock()
+	activeCmd = cmd
+	transcodeMutex.Unlock()
 
 	// Capture stderr for debugging
 	stderr, err := cmd.StderrPipe()
@@ -499,6 +519,13 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Error killing ffmpeg: %v", err)
 		}
 	}
+
+	// Clean up active command reference
+	transcodeMutex.Lock()
+	if activeCmd == cmd {
+		activeCmd = nil
+	}
+	transcodeMutex.Unlock()
 
 	// Wait for command to finish
 	if err := cmd.Wait(); err != nil {
