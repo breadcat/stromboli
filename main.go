@@ -134,6 +134,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             cursor: pointer;
             padding: 0.2rem 0.4rem;
             border-radius: 3px;
+            text-transform: capitalize;
         }
         .breadcrumb span:hover { background: #3d3d3d; }
         .filter-toggle {
