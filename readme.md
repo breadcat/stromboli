@@ -15,6 +15,7 @@ Then access the servers IP address via a web browser on port `8080`.
 
 ## Limitations
 * Uses the host CPU for transcoding so you'll need something reasonably powerful
-* Doesn't support soft subtitle formats
+* Doesn't support soft subtitles
+* You can't select anything past the first audio channel
 * Seeking isn't supported on transcoded files
 * The UI on mobile isn't great
