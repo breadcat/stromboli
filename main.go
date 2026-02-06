@@ -26,6 +26,7 @@ type FileInfo struct {
 	IsDir    bool   `json:"isDir"`
 	IsVideo  bool   `json:"isVideo"`
 	CanPlay  bool   `json:"canPlay"`
+	NeedsTranscode bool `json:"needsTranscode"`
 }
 
 // Video formats that browsers can typically play natively
@@ -342,6 +343,35 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, tmpl)
 }
 
+func needsTranscoding(filePath string) bool {
+	// Use ffprobe to check audio codec
+	cmd := exec.Command("ffprobe",
+		"-v", "error",
+		"-select_streams", "a:0",
+		"-show_entries", "stream=codec_name",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		filePath,
+	)
+
+	output, err := cmd.Output()
+	if err != nil {
+		// If we can't determine, assume it needs transcoding
+		return true
+	}
+
+	audioCodec := strings.TrimSpace(string(output))
+	
+	// Browser-compatible audio codecs
+	compatibleAudio := map[string]bool{
+		"aac":  true,
+		"mp3":  true,
+		"opus": true,
+		"vorbis": true,
+	}
+
+	return !compatibleAudio[audioCodec]
+}
+
 func handleBrowse(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 	fullPath := filepath.Join(rootDir, path)
@@ -373,8 +403,17 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
 		isVideo := videoFormats[ext]
 		canPlay := nativeFormats[ext]
+		needsTranscode := false
 
 		relativePath := filepath.Join(path, entry.Name())
+		fullFilePath := filepath.Join(rootDir, relativePath)
+
+		if canPlay && isVideo && !info.IsDir() {
+			needsTranscode = needsTranscoding(fullFilePath)
+			if needsTranscode {
+				canPlay = false // Mark as needing transcode route
+			}
+		}
 
 		files = append(files, FileInfo{
 			Name:    entry.Name(),
@@ -382,6 +421,7 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 			IsDir:   info.IsDir(),
 			IsVideo: isVideo,
 			CanPlay: canPlay,
+			NeedsTranscode: needsTranscode,
 		})
 	}
 
