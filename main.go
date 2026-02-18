@@ -422,12 +422,46 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
                 '<div class="transcoding-notice">Transcoding...</div>';
 
             player.innerHTML = transcodeNotice +
-                '<video controls autoplay>' +
+                '<video controls autoplay id="activeVideo">' +
                     '<source src="' + videoUrl + '" type="video/mp4">' +
                     'Your browser does not support the video tag.' +
                 '</video>';
 
             currentVideo = path;
+
+            // Add event listener for when video ends
+            const videoElement = document.getElementById('activeVideo');
+            videoElement.addEventListener('ended', function() {
+                playNextVideo();
+            });
+        }
+
+        function playNextVideo() {
+            // Find the current video in the file list
+            const currentIndex = allFiles.findIndex(f => f.path === currentVideo);
+
+            if (currentIndex === -1) return;
+
+            // Find the next video file after the current one
+            for (let i = currentIndex + 1; i < allFiles.length; i++) {
+                if (allFiles[i].isVideo && !allFiles[i].isDir) {
+                    // Found next video, play it
+                    playVideo(allFiles[i].path, allFiles[i].canPlay);
+
+                    // Scroll the file list to show the now-playing video
+                    const fileItems = document.querySelectorAll('.file-item');
+                    const nextItem = Array.from(fileItems).find(
+                        item => item.dataset.path === allFiles[i].path
+                    );
+                    if (nextItem) {
+                        nextItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+            }
+
+            // No next video found
+            console.log('No more videos to play');
         }
 
         // Initial load
