@@ -408,6 +408,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
         function playVideo(path, canPlayNatively) {
             const player = document.getElementById('player');
+            let videoElement = document.getElementById('activeVideo');
 
             // Highlight selected file
             document.querySelectorAll('.file-item').forEach(el => {
@@ -421,19 +422,40 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             const transcodeNotice = canPlayNatively ? '' :
                 '<div class="transcoding-notice">Transcoding...</div>';
 
-            player.innerHTML = transcodeNotice +
-                '<video controls autoplay id="activeVideo">' +
-                    '<source src="' + videoUrl + '" type="video/mp4">' +
-                    'Your browser does not support the video tag.' +
-                '</video>';
+            // If video element already exists, just swap the source
+            if (videoElement) {
+                // Update transcode notice
+                const existingNotice = player.querySelector('.transcoding-notice');
+                if (transcodeNotice && !existingNotice) {
+                    const noticeDiv = document.createElement('div');
+                    noticeDiv.className = 'transcoding-notice';
+                    noticeDiv.textContent = 'Transcoding...';
+                    player.insertBefore(noticeDiv, videoElement);
+                } else if (!transcodeNotice && existingNotice) {
+                    existingNotice.remove();
+                }
+
+                // Swap the source
+                videoElement.src = videoUrl;
+                videoElement.load();
+                videoElement.play();
+            } else {
+                // First time playing - create the video element
+                player.innerHTML = transcodeNotice +
+                    '<video controls autoplay id="activeVideo">' +
+                        '<source src="' + videoUrl + '" type="video/mp4">' +
+                        'Your browser does not support the video tag.' +
+                    '</video>';
+
+                videoElement = document.getElementById('activeVideo');
+
+                // Add event listener for when video ends (only needs to be added once)
+                videoElement.addEventListener('ended', function() {
+                    playNextVideo();
+                });
+            }
 
             currentVideo = path;
-
-            // Add event listener for when video ends
-            const videoElement = document.getElementById('activeVideo');
-            videoElement.addEventListener('ended', function() {
-                playNextVideo();
-            });
         }
 
         function playNextVideo() {
@@ -491,7 +513,7 @@ func needsTranscoding(filePath string) bool {
 	}
 
 	audioCodec := strings.TrimSpace(string(output))
-	
+
 	// Browser-compatible audio codecs
 	compatibleAudio := map[string]bool{
 		"aac":  true,
