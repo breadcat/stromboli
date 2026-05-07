@@ -234,6 +234,11 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             font-size: 0.9rem;
             font-weight: 500;
         }
+		@media (orientation: landscape) {
+			header {
+				display: none;
+			}
+		}
 		@media (max-width: 768px) {
 			.container {
 				flex-direction: column;
