@@ -1,3 +1,3 @@
-module video-browser
+module stromboli
 
 go 1.21
