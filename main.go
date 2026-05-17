@@ -78,10 +78,38 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
 
+// Attempt to find the original path, even though we've removed the case
+func resolvePathCaseInsensitive(base, relPath string) string {
+	segments := strings.Split(filepath.ToSlash(relPath), "/")
+	real := ""
+	for _, seg := range segments {
+		if seg == "" {
+			continue
+		}
+		entries, err := os.ReadDir(filepath.Join(base, real))
+		if err != nil {
+			return relPath
+		}
+		matched := seg // fallback: keep as-is
+		for _, e := range entries {
+			if strings.EqualFold(e.Name(), seg) {
+				matched = e.Name()
+				break
+			}
+		}
+		if real == "" {
+			real = matched
+		} else {
+			real = real + "/" + matched
+		}
+	}
+	return real
+}
+
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	// Find initial browse path from the URL path, stripping first slash, and using hyphens
 	urlPath := strings.TrimPrefix(r.URL.Path, "/")
-	initialPath := strings.ReplaceAll(urlPath, "-", " ")
+	initialPath := resolvePathCaseInsensitive(rootDir, strings.ReplaceAll(urlPath, "-", " "))
 
 	tmpl := `<!DOCTYPE html>
 <html>
@@ -354,7 +382,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
         function browse(path = '') {
             currentPath = path;
 
-            const urlPath = path ? '/' + path.replace(/ /g, '-') : '/';
+            const urlPath = path ? '/' + path.replace(/ /g, '-').toLowerCase() : '/';
             history.pushState({ path }, '', urlPath);
 
             fetch('/api/browse?path=' + encodeURIComponent(path))
