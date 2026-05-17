@@ -79,6 +79,10 @@ func main() {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
+	// Find initial browse path from the URL path, stripping first slash, and using hyphens
+	urlPath := strings.TrimPrefix(r.URL.Path, "/")
+	initialPath := strings.ReplaceAll(urlPath, "-", " ")
+
 	tmpl := `<!DOCTYPE html>
 <html>
 <head>
@@ -312,6 +316,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
         let allFiles = [];
         let filterVisible = false;
 
+        const initialPath = '__INITIAL_PATH__';
+
         function toggleFilter() {
             filterVisible = !filterVisible;
             const filterBar = document.getElementById('filterBar');
@@ -347,6 +353,10 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
         function browse(path = '') {
             currentPath = path;
+
+            const urlPath = path ? '/' + path.replace(/ /g, '-') : '/';
+            history.pushState({ path }, '', urlPath);
+
             fetch('/api/browse?path=' + encodeURIComponent(path))
                 .then(r => r.json())
                 .then(files => {
@@ -491,14 +501,20 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
             console.log('No more videos to play');
         }
 
-        // Initial load
-        browse();
+        // Handle browser back/forward navigation
+        window.addEventListener('popstate', function(e) {
+            const path = e.state ? e.state.path : '';
+            browse(path);
+        });
+
+        // Initial load — navigate into the path from the URL (if any)
+        browse(initialPath);
     </script>
 </body>
 </html>`
 
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, tmpl)
+	fmt.Fprint(w, strings.ReplaceAll(tmpl, "__INITIAL_PATH__", initialPath))
 }
 
 func needsTranscoding(filePath string) bool {
